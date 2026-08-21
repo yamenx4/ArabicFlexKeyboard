@@ -1,0 +1,44 @@
+name: بناء APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: تنزيل المشروع
+        uses: actions/checkout@v4
+
+      - name: فك ملف ZIP
+        run: |
+          unzip -q ArabicFlexKeyboard_CloudBuild.zip -d project
+
+      - name: تحديد مجلد المشروع
+        run: |
+          PROJECT_DIR=$(find project -name settings.gradle -o -name settings.gradle.kts | head -n 1 | xargs dirname)
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+
+      - name: إعداد Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: إعداد Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: بناء APK
+        run: |
+          cd "$PROJECT_DIR"
+          gradle assembleDebug --no-daemon
+
+      - name: رفع APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArabicFlexKeyboard-APK
+          path: |
+            ${{ env.PROJECT_DIR }}/app/build/outputs/apk/**/*.apk
